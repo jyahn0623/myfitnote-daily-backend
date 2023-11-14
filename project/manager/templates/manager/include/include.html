@@ -1,0 +1,178 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="author" content="Ahn Juyoung">
+    <meta name='csrf' content='{{csrf_token}}'>
+    <title>myFitNote 관리자 시스템</title>
+    {% include 'manager/include/default-css.html' %}
+    {% include 'manager/include/default-js.html' %}
+    {% include 'manager/include/message.html' %}
+    {% block header %}{% endblock %}
+    {% block style %}{% endblock %}
+</head>
+
+<body id="page-top">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-laugh-wink"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">
+                    <div>myFitNote</div>
+                    <div>관리자 시스템</div>
+                </div>
+            </a>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{% url 'manage:user-inquiry' %}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>회원 정보</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{% url 'manage:user-situp-inquiry' %}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>근기능 검사</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{% url 'manage:user-eyehand-inquiry' %}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>협응 검사</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{% url 'manage:user-walk-inquiry' %}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>심폐기능 검사</span>
+                </a>
+            </li>
+            <div class="sidebar-heading">
+                Data by center
+            </div>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="/manage/npc/data">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>국립재활원 리빙랩</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="/manage/daekyo/data">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>대교 뉴이프</span>
+                </a>
+            </li>
+            <div class="sidebar-heading">
+                Analaysis
+            </div>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{% url 'manage:analysis-pose' %}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>동작분석</span>
+                </a>
+            </li>
+            {% comment %} <li class="nav-item">
+              <a class="nav-link collapsed" href="/" data-toggle="collapse" data-target="#counselor_room"
+                  aria-expanded="true" aria-controls="collapseTwo">
+                  <i class="fas fa-fw fa-table"></i>
+                  <span>상담실</span>
+              </a>
+              <div id="counselor_room" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" href="">회원 정보</a>
+                    <a class="collapse-item" href="">상담실</a>
+                    <a class="collapse-item" href="">상담정보</a>
+                </div>
+            </div>  
+            </li> {% endcomment %}
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    
+                    <span id="header-top-info"></span>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+                        <!-- Nav Item - User Information -->
+                        {% if not user.is_authenticated %}
+                            <a class="mr-2 d-none d-lg-inline text-gray-600 small" href="">로그인</a>
+                        {% else %}
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="/" id="userDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="mr-2 d-none d-lg-inline text-gray-600 small">관리자</span>
+                                    <img class="img-profile rounded-circle"
+                                        src="{% static 'manager/img/undraw_profile.svg' %}">
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="userDropdown">
+                                {% comment %} <a class="dropdown-item" href="/">
+                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Profile
+                                </a>
+                                <a class="dropdown-item" href="/">
+                                    <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Settings
+                                </a>
+                                <a class="dropdown-item" href="/">
+                                    <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Activity Log
+                                </a>
+                                <div class="dropdown-divider"></div> {% endcomment %}
+                                <a class="dropdown-item" href="">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    로그아웃
+                                </a>
+                            </div>
+                        </li>
+                        {% endif %}
+
+                    </ul>
+
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                {% block content %}
+                {% endblock %}
+                <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Marketian & Exercowork 2023</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+        </div>
+        <!-- End of Content Wrapper -->
+    </div>
+    <!-- End of Page Wrapper -->
+    {% block js %}{% endblock %}
+</body>
+</html>

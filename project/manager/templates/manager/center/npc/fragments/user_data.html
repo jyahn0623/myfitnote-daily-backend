@@ -1,0 +1,74 @@
+<table class="table table-sm table-bordered text-center"
+       style="color : black;">
+    <thead class="thead thead-dark"> 
+        <tr>
+            <th rowspan='2'>이름</th>
+            <th rowspan='2'>측정 날짜</th>
+            <th rowspan='2'>TUG</th>
+            <th colspan='5'>SPPB</th>
+            <th colspan='2'>외발서기</th>
+        </tr>
+        <tr>
+            <th>균형 (일반)</th>
+            <th>균형 (정렬)</th>
+            <th>균형 (반정렬)</th>
+            <th>GaitSpeed</th>
+            <th>의자 일어서기</th>
+            <th>Right</th>
+            <th>Left</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user, d in data.items %}
+        <tr>
+            <td>{{d.name}}</td>
+            <td>{{d.date|date:"Y-m-d"}}</td>
+            {% comment %} TUG {% endcomment %}
+            <td>
+                {% for data in d.TUG %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+            {% comment %} 균형 {% endcomment %}
+            <td>
+                {% for data in d.exercise_balance_test %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+            <td>
+                {% for data in d.exercise_balance_line_test %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+            <td>
+                {% for data in d.exercise_balance_reverse_line_test %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+            {% comment %} Gait Speed {% endcomment %}
+            <td>
+                {% for data in d.GaitSpeed %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+            {% comment %} 의자 일어서기 {% endcomment %}
+            <td>
+                {% for data in d.SeatDownUp %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+            {% comment %} 외발서기 우/좌 {% endcomment %}
+            <td>
+                {% for data in d.SINGLE_LEGSTANCE %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+            <td>
+                {% for data in d.SINGLE_LEGSTANCE %}
+                    {{forloop.counter}}차 측정 : {{data}} <br>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

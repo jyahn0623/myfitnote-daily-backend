@@ -1,0 +1,20 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: wchangup
+      POSTGRES_USER: obeyjy
+      POSTGRES_PASSWORD: nf1yfa23
+    ports:
+      - 5432:5432
+    volumes:
+      - /home/marketian/project/wChangup/project/postgre/data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8010:8080
