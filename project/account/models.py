@@ -68,9 +68,15 @@ class User(AbstractBaseUser):
     
 class Company(models.Model):
     """기업"""
+    class Meta:
+        # set unique constraint
+        constraints = [
+            models.UniqueConstraint(fields=['code'], name='unique_company_code')
+        ]
 
     name = models.CharField(max_length=20, verbose_name="기업명")
     logo = models.ImageField(null=True, blank=True, verbose_name="기업 로고")
+    code = models.CharField(max_length=10, verbose_name="기업 코드", blank=True, null=True)
     primary_color = models.CharField(max_length=10, default="#00b0a6", verbose_name="기업 주요 색상 RGB")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="등록일시")
 
