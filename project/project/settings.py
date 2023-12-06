@@ -23,7 +23,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'account',
-    'manager'
+    'manager',
+    'client'
 ]
 
 MIDDLEWARE = [
@@ -61,14 +62,10 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'wchangup',
-        'USER': 'obeyjy',
-        'PASSWORD': 'nf1yfa23',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    },
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "myfitnote",
+    }
 }
 
 
@@ -120,7 +117,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '[{asctime}] {module} {message}',
             'style': '{',
         },
     },
@@ -135,39 +132,29 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'mail_admins': {
-            'level': 'WARNING',
-            'class': 'django.utils.log.AdminEmailHandler',
-            'formatter': 'verbose',
-            'include_html' : True,
-            'email_backend' : 'project.loggings.LoggingBackend'
-        },
         'file' : {
+            'level' : 'INFO',
+            'class' : 'logging.FileHandler',
+            'formatter' : 'verbose',
+            'filename' : os.path.join(Path(BASE_DIR).parent, 'log/logging.log')
+        },
+        'application_file' : {
             'level' : 'DEBUG',
             'class' : 'logging.FileHandler',
             'formatter' : 'verbose',
-            'filename' : '/home/marketian/project/wChangup/project/logging/request_log'
+            'filename' : os.path.join(Path(BASE_DIR).parent, 'log/application.log')
         }
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'propagate': True,
+            'propagate': False,
         },
-        # 'django.request': {
-        #     'handlers': ['mail_admins'],
-        #     'level': 'WARNING',
-        #     'propagate': False,
-        # },
+        'application' : {
+            'handlers': ['application_file'],
+            'level' : 'DEBUG',
+        }
     }
 }
 
-# need to add ADMINS and MANAGERS, when i didn't add this, it can't be send mail by admins_mail logging
-# ADMINS = [('Paul Ahn', 'jyahn0623@naver.com'), ]
-# MANAGERS = ADMINS
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.naver.com'
-# EMAIL_PORT = 465
-# EMAIL_USE_SSL = True
-# EMAIL_HOST_USER = 'jyahn0623@naver.com'
-# EMAIL_HOST_PASSWORD = 'jfslbjea12^'
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880

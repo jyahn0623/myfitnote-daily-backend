@@ -23,5 +23,8 @@ urlpatterns = [
     path('walk', api_views.UserWalkAPI.as_view()),
 
     path('exercise', api_views.ExerciseAPI.as_view()),
-    path('exercise/format/series', api_views.ExerciseSerieseAPI.as_view())
+    path('exercise/format/series', api_views.ExerciseSerieseAPI.as_view()),
+
+    # Client
+    path('client', api_views.ClientAPI.as_view())
 ] 

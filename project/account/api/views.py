@@ -18,7 +18,9 @@ from django.contrib.auth import get_user_model, authenticate, login
 from django.contrib import auth
 from django.db.models import Q
 from django.db import DatabaseError, transaction
+from django.db.utils import IntegrityError
 from django.http import HttpRequest
+from django.core.exceptions import ValidationError
 
 from account.models import (
     User,
@@ -28,7 +30,7 @@ from account.api.serializers import *
 from account.utils import *
 from manager.logic_views.utils import extrace_value_from_exercise_log
 
-logger = logging.getLogger('django')
+logger = logging.getLogger('application')
 
 class UserQuestionAPI(APIView):
     def post(self, request):
@@ -55,30 +57,39 @@ class UserAPI(ModelViewSet):
             'error' : None
         }, status=200)
 
-    @action(detail=True, method=['post'])
+    @action(detail=False, method=['post'])
     def login(self, request):
-        print("유저가 로그인을 시도합니다.")
+        logger.info(f"로그인 요청 - {request.body}")
         login_data = json.loads(request.body)
-        print(login_data)
         user_auth = authenticate(password=login_data.get('password'), 
-                                 username=login_data.get('phone'))
-        print(user_auth)
+                                 username=login_data.get('username'))
         if user_auth:
-            print("로그인 성공")
+            logger.info(f"로그인 성공")
             token = user_auth.auth_token.key
-            return Response({
+            user_type = user_auth.user_type
+            user_data = {
                 "success" : True,
                 "user" : {
-                    "phone" : user_auth.phone,
-                    "name" : user_auth.name,
-                    "birth_date" : user_auth.birth_date,
-                    "gender" : user_auth.gender,
-                    "height" : user_auth.height,
-                    "weight" : user_auth.weight,
-                    "token" : token
+                    "userType" : user_type,
+                    "username" : user_auth.username,
+                    # "name" : user_auth.name,
+                    # "birth_date" : user_auth.birth_date,
+                    # "gender" : user_auth.gender,
+                    # "height" : user_auth.height,
+                    # "weight" : user_auth.weight,
+                    "token" : token,
                 }
-            })
+            }
+
+            if user_type == 2:
+                # 기관 관리자인 경우 해당 기업의 정보도 함께 반환
+                user_data.update({
+                    "manager" : CompanyManagerSerializer(user_auth.companymanager).data
+                }) 
+
+            return Response(user_data)
         else:
+            logger.info(f"로그인 실패")
             return Response({
                 "success" : False,
                 "user" : None
@@ -232,3 +243,80 @@ class ExerciseSerieseAPI(APIView):
         pprint.pprint(data_dict)
 
         return Response(data_dict)
+    
+class ClientAPI(APIView):
+    authentication_classes = [TokenAuthentication]
+
+    def post(self, request):
+        """기업 관리자가 고객을 생성할 경우 호출"""
+        data = json.loads(request.body)
+        client = None
+        success = False
+        message = "고객 등록에 실패하였습니다."
+
+        fields = ['birth_date', 'name', 'phone', 'gender', 'height', 'weight', 'address']
+        query = {}
+
+        for field in fields:
+            value = data.get(field)
+            
+            if field == 'birth_date':
+                value = f'{value[:4]}-{value[4:6]}-{value[6:]}'
+
+            query[field] = value
+        
+        manager_id_number = data['manager']['id_number']
+        manager_company_name = data['manager']['company']['name']
+
+        manager = CompanyManager.objects.get(id_number=manager_id_number,
+                                             company__name=manager_company_name)
+        query.update({
+            "manager" : manager
+        })
+
+        logger.info(f"{manager.company.name} | {manager.name} ({manager.id_number})가 새로운 고객 등록 시도 - {data}")
+
+        # 유저 생성
+        try:
+            with transaction.atomic():
+                # TODO: Change username prefix as company unique code
+                user = User.objects.create_user(username='D' + data['phone'],
+                                                password=data['phone'],
+                                                user_type=1)
+                token = Token.objects.create(user=user)
+                client = Client(user=user, **query)
+                client.save()
+                # client.user = user
+                # client.save(update_fields=['user'])
+
+                logger.info(f"{manager.company.name} | {manager.name} ({manager.id_number})가 성공적으로 고객 등록 - {data}")
+                success = True
+                message = f"성공적으로 고객을 생성하였습니다.\n아이디　 : {user.username}입니다.\n비밀번호 : {data['phone']}입니다."
+        except ValidationError as err:
+            message = "이미 등록된 고객입니다."
+            logger.error(f"{manager.company.name} | {manager.name} ({manager.id_number})가 고객 등록 도중 오류 발생", exc_info=True)
+        
+        except IntegrityError as err:
+            logger.error(f"{manager.company.name} | {manager.name} ({manager.id_number})가 고객 등록 도중 오류 발생 | IntegrityError", exc_info=True)
+
+        context = {
+            'success' : success,
+            'message' : message,
+            'client' : ClientSerializer(client).data
+        }
+
+        return Response(context, 200)
+    
+    def get(self, request):
+        
+        name = request.GET.get('name')
+
+        # 기업 관리자의 고객 목록 반환
+        if name:
+            clients = Client.objects.filter(manager__user=request.user,
+                                            name__contains=name)
+        else:
+            clients = Client.objects.filter(manager__user=request.user)
+        clients_data = ClientSerializer(clients, many=True).data
+
+        return Response(clients_data, status=200)

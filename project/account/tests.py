@@ -5,11 +5,11 @@ import json
 import collections 
 
 from django.test import TestCase
+from django.contrib.auth import get_user_model
 
 from account.models import *
 from account.utils import *
-
-from manager.logic_views.utils import extrace_value_from_exercise_log
+from account.api.serializers import *
 
 class NoMercyDummeyDataTestCase(unittest.TestCase):
     def test_create_dummy_data(self):
@@ -53,42 +53,101 @@ class NoMercyDummeyDataTestCase(unittest.TestCase):
             Index Cond: ((phone)::text = '100'::text)
         """
 
-class WalkTestCase(unittest.TestCase):
-    def test_walk_data_type(self):
-        walk = Walk.objects.first()
-        walk_data = walk.data
-        walk_data = data_to_dict(walk_data)
-        self.assertTrue(isinstance(walk_data, dict))
+class ModelTestCase(TestCase):
 
-class ExerciseSerieseTestCase(unittest.TestCase):
-    def test_get_series_data(self):
-        """
-        일자별 사용자의 데이터 반환
-                23.10.11 - 23.10.12 - 23.10.13
-        WALK        1         2          3
-        SITUP       4         9          2
-        SINGLEG     5         6          5
+    def setUp(self):
+        # Create a sample user for testing
+        self.user = get_user_model().objects.create_user(
+            username='123456789',
+            password='testpassword',
+            user_type=1
+        )
 
-        Data type will be like below
-        WALK : [{
-            date : 23.10.11,
-            value : 10
-        }]
-        """
-                
-        data = ExerciseLog.objects.filter(user="e86a28c1348e6cabc24c336d14ef31ed84a61134",
-                                          type__in=['SITUP', 'WALK', 'SINGLE_LEGSTANCE']) \
-                                  .order_by('created_at')
-        data_dict = collections.defaultdict(list)
-        for d in data:
-            
-            data_dict[d.type].append({
-                'date' : d.created_at,
-                'value' : extrace_value_from_exercise_log(d)
-            })
+        # Create a sample company for testing
+        self.company = Company.objects.create(
+            name='Test Company',
+            logo=None,
+            primary_color='#00b0a6'
+        )
+
+        # Create a sample company manager for testing
+        self.company_manager = CompanyManager.objects.create(
+            user=self.user,
+            company=self.company,
+            id_number='12345',
+            phone='987654321',
+            name='Manager Name'
+        )
+
+        # Create a sample client for testing
+        self.client_user = Client.objects.create(
+            user=self.user,
+            manager=self.company_manager,
+            phone='111222333',
+            name='Client Name',
+            birth_date='2000-01-01',
+            gender='M',
+            height='180',
+            weight='70',
+            address='Test Address'
+        )
+
+    def test_user_creation(self):
+        self.assertEqual(self.user.username, '123456789')
+        self.assertTrue(self.user.check_password('testpassword'))
+
+    def test_company_creation(self):
+        self.assertEqual(self.company.name, 'Test Company')
+        self.assertEqual(self.company.primary_color, '#00b0a6')
+
+    def test_company_manager_creation(self):
+        self.assertEqual(self.company_manager.company, self.company)
+        self.assertEqual(self.company_manager.id_number, '12345')
+        self.assertEqual(self.company_manager.phone, '987654321')
+        self.assertEqual(self.company_manager.name, 'Manager Name')
+
+    def test_client_creation(self):
+        self.assertEqual(self.client_user.manager, self.company_manager)
+        self.assertEqual(self.client_user.phone, '111222333')
+        self.assertEqual(self.client_user.name, 'Client Name')
+        self.assertEqual(str(self.client_user.birth_date), '2000-01-01')
+        self.assertEqual(self.client_user.gender, 'M')
+        self.assertEqual(self.client_user.height, '180')
+        self.assertEqual(self.client_user.weight, '70')
+        self.assertEqual(self.client_user.address, 'Test Address')
         
-        pprint.pprint(data_dict)
+    def test_client_manager_drf(self):
+        
+        manager = CompanyManager.objects.first()
+        data = CompanyManagerSerializer(manager).data
+
+        print(data)
+
+class ClientTestCase(unittest.TestCase):
+
+    def test_create_dummy_client(self):
+
+        name = [
+            "민준",
+            "서준",
+            "도윤",
+            "예준",
+            "시우",
+            "하준",
+            "지호",
+            "주원",
+            "지후",
+            "준우",
+            "준서",
+            "도현",
+        ]
+        
+        for n in name:
+            client = Client.objects.first()
+            client.pk = None
+            client.name = n
+            client.save()
 
         
 
-    
+        print(client)
