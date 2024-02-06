@@ -2,6 +2,7 @@ import pprint
 import json
 import logging
 import base64
+import os
 
 from django.core.files.base import ContentFile
 
@@ -52,11 +53,20 @@ class ClientMeasurementAPI(APIView):
                                            phone=client_phone).first()
             logger.info(f'{manager}이 클라이언트 ({client})를 측정하였습니다.')
             test_result = data.get("testResult")
+            exercise = data.get("exercise")
+            
+            if data.get("exercise") == "외발서기":
+                side = data.get('testResult').get('side')
+                if side == "왼발":
+                    exercise = "외발서기 (좌)"
+                else:
+                    exercise = "외발서기 (우)"
+
             measurement = ClientMeasurement.objects.create(
                 client=client,
                 count=test_result.get("count"),
                 grade=test_result.get("grade"),
-                exercise=data.get("exercise"),
+                exercise=exercise,
                 raw_data=data.get("testResult"))
             logger.info(f'{manager}이 클라이언트 ({client}) 측정 기록 저장을 완료하였습니다. - {measurement.pk}')
 
@@ -65,11 +75,32 @@ class ClientMeasurementAPI(APIView):
 
         return Response({}, status=200)
 
+    def delete(self, request):
+        print(request.GET)
+        
+        checkedResultIds = request.GET.getlist("checkedResultIds")
+
+        try:
+            measurement = ClientMeasurement.objects.filter(id__in=checkedResultIds)
+            measurement.delete()
+            logger.info(f'측정 기록 ({measurement}) 삭제를 완료하였습니다.')
+            return Response({
+                'message' : "측정 기록 삭제를 완료하였습니다.",
+                'success' : True,
+            })
+        except Exception as err:
+            logger.error(f'측정 기록 삭제 도중 문제가 발생하였습니다.', exc_info=True)
+            return Response({
+                'message' : "측정 기록 삭제 도중 문제가 발생하였습니다.",
+                'success' : False,
+            })
 class ClientRomAPI(APIView):
     authentication_classes = [TokenAuthentication]
 
     def post(self, request):
-        data = json.loads(request.body)
+        print(request.POST, request.FILES)
+        data = json.loads(request.POST.get("result"))
+        result_image = request.FILES.get("image")
         
         manager = request.user.companymanager
         client_name = data.get("name")
@@ -80,29 +111,16 @@ class ClientRomAPI(APIView):
                                            phone=client_phone).first()
             logger.info(f'ClientRomAPI - {manager}이 클라이언트 ({client})를 측정하였습니다.')
 
-            # if data.get('image'):
-            #     print("Image byte is comming!")
-            #     measurement = ClientMeasurement.objects.filter(
-            #         client=client,
-            #         count=data.get("angle"),
-            #         exercise=data.get("type"))
-                
-            #     if measurement is not None:
-            #         print("Decode the base64 encoded image data")
-            #         # Decode the base64 encoded image data
-            #         image_data = base64.b64decode(data.get("image"))
-            #         print("base64 decodign is finished!")
-            #         # Create a ContentFile from the decoded image data
-            #         image_file = ContentFile(image_data, name='filename.jpg')
-            #         print(image_file)
-            #         measurement.update({
-            #             "raw_data" : image_file
-            #         })
-            # else:
             measurement = ClientMeasurement.objects.create(
                 client=client,
                 count=data.get("angle"),
                 exercise=data.get("type"))
+
+            if result_image:
+                logger.info(f"ClientRomAPI - {client}의 측정 이미지가 저장되었습니다.")
+                measurement.result_image = result_image
+                measurement.save()
+
             logger.info(f'ClientRomAPI - {manager}이 클라이언트 ({client}) 측정 기록 저장을 완료하였습니다. - {measurement.pk}')
 
         except Exception as err:
@@ -145,7 +163,8 @@ class ClientFinalResultModel:
     EXERCISE_LABEL_MAP = {
         "상지 근기능" : "upper",
         "하지 근기능" : "lower",
-        "외발서기" : "singleleg",
+        "외발서기 (좌)" : "singleleg_left",
+        "외발서기 (우)" : "singleleg_right",
         "심폐 기능" : "cardio",
     }
 
@@ -154,13 +173,15 @@ class ClientFinalResultModel:
         "고관절 외전 (좌)" : "rom_left_leg_abduction",
         "어깨 외전 (우)" : "rom_right_shoulder_abduction",
         "어깨 외전 (좌)" : "rom_left_shoulder_abduction",
-        "정면" : "pose_front"
+        "정면" : "pose_front",
+        "측면" : "pose_side"
     }
 
     UNIT = {
         "상지 근기능" : "회",
         "하지 근기능" : "회",
-        "외발서기" : "초",
+        "외발서기 (좌)" : "초",
+        "외발서기 (우)" : "초",
         "심폐 기능" : "회",
     }
 
@@ -169,7 +190,8 @@ class ClientFinalResultModel:
         self.measurement = {
             "upper" : self._initExerciseValue(),
             "lower" : self._initExerciseValue(),
-            "singleleg" : self._initExerciseValue(),
+            "singleleg_left" : self._initExerciseValue(),
+            "singleleg_right" : self._initExerciseValue(),
             "cardio" : self._initExerciseValue(),
             "rom" : self._initRomValue()
         }
@@ -182,18 +204,27 @@ class ClientFinalResultModel:
         return {
             "rom_right_leg_abduction" : {
                 "value" : 0,
+                "result_image" : ""
             },
             "rom_left_leg_abduction" : {
                 "value" : 0,
+                "result_image" : ""
             },
             "rom_right_shoulder_abduction" : {
                 "value" : 0,
+                "result_image" : ""
             },
             "rom_left_shoulder_abduction" : {
                 "value" : 0,
+                "result_image" : ""
             },
             "pose_front" : {
                 "value" : 0,
+                "result_image" : ""
+            },
+            "pose_side" : {
+                "value" : 0,
+                "result_image" : ""
             }
         }
         
@@ -212,7 +243,8 @@ class ClientFinalResultModel:
 
         if type in ClientFinalResultModel.ROM_LABEL_MAP.keys():
             data = {
-                'value' : f'{result.count} 도/°'
+                'value' : f'{result.count} 도/°',
+                'result_image' : f'http://58.120.166.106:7575{result.result_image.url}' if result.result_image else None
             }
             self.setRomValue(type, data)
         else:
@@ -223,7 +255,7 @@ class ClientFinalResultModel:
             self.setExerciseValue(type, data)
 
     def valueProcessing(self, type, value):
-        if type == '외발서기':
+        if type == '외발서기 (좌)' or type == '외발서기 (우)':
             value = int(value) / 1000
 
         return f'{value}{ClientFinalResultModel.UNIT[type]}'

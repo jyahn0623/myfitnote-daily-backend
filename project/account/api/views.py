@@ -64,9 +64,9 @@ class UserAPI(ModelViewSet):
         user_auth = authenticate(password=login_data.get('password'), 
                                  username=login_data.get('username'))
         if user_auth:
-            logger.info(f"로그인 성공")
             token = user_auth.auth_token.key
             user_type = user_auth.user_type
+            logger.info(f"로그인 성공 {user_auth} | TYPE: {user_type}")
             user_data = {
                 "success" : True,
                 "user" : {
@@ -86,6 +86,11 @@ class UserAPI(ModelViewSet):
                 user_data.update({
                     "manager" : CompanyManagerSerializer(user_auth.companymanager).data
                 }) 
+            elif user_type == 1:
+                # 일반 사용자인 경우 해당 사용자의 정보도 함께 반환
+                user_data.update({
+                    "client" : ClientSerializer(user_auth.client).data
+                })
 
             return Response(user_data)
         else:
@@ -279,10 +284,10 @@ class ClientAPI(APIView):
         # 유저 생성
         try:
             with transaction.atomic():
-                # TODO: Change username prefix as company unique code
-                user = User.objects.create_user(username='D' + data['phone'],
+                user = User.objects.create_user(username=manager.company.code + data['phone'],
                                                 password=data['phone'],
                                                 user_type=1)
+                print(user)
                 token = Token.objects.create(user=user)
                 client = Client(user=user, **query)
                 client.save()
@@ -291,7 +296,7 @@ class ClientAPI(APIView):
 
                 logger.info(f"{manager.company.name} | {manager.name} ({manager.id_number})가 성공적으로 고객 등록 - {data}")
                 success = True
-                message = f"성공적으로 고객을 생성하였습니다.\n아이디　 : {user.username}입니다.\n비밀번호 : {data['phone']}입니다."
+                message = f"성공적으로 고객을 생성하였습니다.\n아이디 : {user.username}입니다.\n비밀번호 : {data['phone']}입니다."
         except ValidationError as err:
             message = "이미 등록된 고객입니다."
             logger.error(f"{manager.company.name} | {manager.name} ({manager.id_number})가 고객 등록 도중 오류 발생", exc_info=True)

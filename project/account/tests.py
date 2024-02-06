@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from account.models import *
 from account.utils import *
 from account.api.serializers import *
+from account.selectors import *
 
 class NoMercyDummeyDataTestCase(unittest.TestCase):
     def test_create_dummy_data(self):
@@ -151,3 +152,13 @@ class ClientTestCase(unittest.TestCase):
         
 
         print(client)
+
+
+class UserSelectorTestCase(unittest.TestCase):
+    def setUp(self):
+        self.selector = UserSelector()
+        self.company = Company.objects.first()
+
+    def test_get_user_by_company(self):
+        users = self.selector.get_user_by_company(self.company)
+        print(users) 

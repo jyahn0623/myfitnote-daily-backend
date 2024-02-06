@@ -1,0 +1,14 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: myfitnote
+      POSTGRES_USER: obeyjy
+      POSTGRES_PASSWORD: nf1yfa23
+    ports:
+      - 5435:5435
+    volumes:
+      - /home/marketian/project/wChangup/project/postgre/data:/var/lib/postgresql/data

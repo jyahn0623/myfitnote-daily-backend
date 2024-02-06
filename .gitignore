@@ -141,3 +141,4 @@ logging/
 nohup.out
 postgre/
 venv/
+log/

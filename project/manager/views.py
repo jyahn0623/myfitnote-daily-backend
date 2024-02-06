@@ -2,8 +2,11 @@ import tempfile
 import os
 import json
 
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 
 from account.api.views import (
@@ -12,15 +15,54 @@ from account.api.views import (
 )
 from account.models import *
 from account.utils import *
+from account.selectors import *
 
+from manager.passes_test import *
+from manager.utils import *
+
+@user_passes_test(check_user_has_companymanager_attribute)
 def index(request: HttpRequest) -> HttpResponse: 
     return render(request, 'manager/index.html')
 
+def auth_login(request: HttpRequest) -> HttpResponse:
+    # Make a logic to authenticate user with username and password
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+    message = ""
+    
+    if request.method == 'POST':
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            print(user)
+            if hasattr(user, 'companymanager'):
+                login(request, user)
+                return redirect('manage:index')
+            else:
+                message = "관리자 시스템 접근 권한이 없습니다."
+        else:
+            message = "아이디 혹은 비밀번호가 일치하지 않습니다."
+        
+    context = {
+        'message' : message
+    }
+    
+    return render(request, 'manager/auth/login.html', context)
+
+@login_required
+def auth_logout(request: HttpRequest) -> HttpResponse:
+    logout(request)
+    return redirect('manage:login')
+    
+@user_passes_test(check_user_has_companymanager_attribute)
 def user_inquiry(request: HttpRequest) -> HttpResponse:
-    api = UserAPI()
-    response = api.list(request)
+    
+    selector = UserSelector()
+    clients = selector.get_client_by_company(request.user.companymanager.company)
+    managers = selector.get_manager_by_company(request.user.companymanager.company)
+
     return render(request, 'manager/user/index.html', {
-        'users' : response.data['response']
+        'clients' : clients,
+        'managers' : managers
     })
 
 def user_walk_inquiry(request: HttpRequest) -> HttpResponse:
@@ -30,6 +72,7 @@ def user_walk_inquiry(request: HttpRequest) -> HttpResponse:
         'data' : data
     })
 
+@user_passes_test(check_user_has_companymanager_attribute)
 def user_situp_inquiry(request: HttpRequest) -> HttpResponse:
     data = ExerciseLog.objects.filter(type='SITUP')
 
@@ -37,6 +80,7 @@ def user_situp_inquiry(request: HttpRequest) -> HttpResponse:
         'data' : data
     })
 
+@user_passes_test(check_user_has_companymanager_attribute)
 def user_eyehand_inquiry(request: HttpRequest) -> HttpResponse:
     data = ExerciseLog.objects.filter(type='EYEHAND')
 
@@ -44,6 +88,7 @@ def user_eyehand_inquiry(request: HttpRequest) -> HttpResponse:
         'data' : data
     })
 
+@user_passes_test(check_user_has_companymanager_attribute)
 def user_data_detail(request, pk) -> HttpResponse:
     log = get_object_or_404(ExerciseLog, pk=pk)
     _type = log.type
@@ -91,7 +136,7 @@ def user_data_detail(request, pk) -> HttpResponse:
         'data' : data
     })
 
-
+@user_passes_test(check_user_has_companymanager_attribute)
 def analysis_pose(request: HttpRequest) -> HttpResponse:
 
     if request.method == 'POST':
@@ -177,3 +222,83 @@ def analysis_pose(request: HttpRequest) -> HttpResponse:
         "sub_title" : "영상을 기반으로 동작을 분석해 보세요."
     }
     return render(request, 'manager/analysis/pose/index.html', context)
+
+@user_passes_test(check_user_has_companymanager_attribute)
+def measurement(request: HttpRequest) -> HttpResponse:
+    return render(request, 'manager/measurement/index.html')
+
+@csrf_exempt
+@user_passes_test(check_user_has_companymanager_attribute)
+def measurement_save_temp(request):
+    data = json.loads(request.body.decode('utf-8'))
+    incoming_data = data.get('data')
+    print(incoming_data)
+    rows = []
+    # afterChange events has 4 values (row, prop, oldValue, newValue)
+    file_path = os.path.join(settings.MEDIA_ROOT, 'measurement', 'daekyo_data.json')
+   
+    # Save incoming data to json file
+    with open(file_path, 'w') as f:
+        # before save, remove previous data.
+        f.seek(0)
+        f.truncate()
+
+        for line_data in incoming_data:
+            print(line_data)
+            # check all of data in lise is null
+            if all([not data for data in line_data]):
+                continue
+
+            rows.append(line_data)
+        
+        json.dump(rows, f)
+
+
+    return JsonResponse({
+        'message' : 'success',
+        'success' : True
+    })
+
+@user_passes_test(check_user_has_companymanager_attribute)
+def measurement_load_temp(request):
+    file_path = os.path.join(settings.MEDIA_ROOT, 'measurement', 'daekyo_data.json')
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            existing_data = json.load(f)
+    else:
+        existing_data = []
+
+    return JsonResponse({
+        'data' : existing_data
+    })
+
+@csrf_exempt
+def report(request):
+    
+    if request.method == "POST":
+        print(request.POST)
+        name = request.POST.get('name')
+        row = request.POST.get('row', 0)
+        row = int(row)
+
+        imageReportGenerator = ImageReportGenerator()
+
+        file_path = os.path.join(settings.MEDIA_ROOT, 'measurement', 'daekyo_data.json')
+        _json_file = open(file_path, 'r')
+        data = json.load(_json_file)
+        row = data[row]
+        walk_grade = row[10][0]
+        seated_up_grade = row[8][0]
+        path, filename = imageReportGenerator.create(row[0], row[2], row[3], row[5], row[4], '0', row[9], walk_grade, row[7], seated_up_grade)
+        _json_file.close()
+
+        print(path)
+        
+        return JsonResponse({
+            'message' : 'success',
+            'success' : True,
+            'data' : {
+                'link' : f'http://58.120.166.106:7575/media/report/{filename}',
+                'filename' : filename
+            }
+        })

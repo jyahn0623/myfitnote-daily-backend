@@ -8,10 +8,11 @@ from client.api.serializers import ClientMeasurementSerializer
 class UserSerializer(serializers.ModelSerializer):
     auth_token = serializers.SerializerMethodField(read_only=True)
     password = serializers.CharField(write_only=True)
+    user_type = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-        fields = (('phone', 'password', 'name', 'birth_date', 'gender', 'height', 'weight'))
+        fields = (('username', 'password', 'user_type'))
     
     def auth_token(self, obj):
         return self.get_token(obj)
@@ -20,6 +21,12 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.auth_token:
             return obj.auth_token.key
         return None
+    
+    def get_user_type(self, obj):
+        if obj.user_type == 1:
+            return "고객"
+        elif obj.user_type == 2:
+            return "담당자"
 
     def create(self, validated_data):
         user = super().create(validated_data)
@@ -70,9 +77,10 @@ class ClientSerializer(serializers.ModelSerializer):
     """Client Serializer for android account.model.Client"""
     last_measurement = serializers.SerializerMethodField() # 최근 검사 항목
     username = serializers.SerializerMethodField() # 사용자 아이디
+    token = serializers.SerializerMethodField() # 사용자 토큰
     class Meta:
         model = Client
-        fields = ('name', 'phone', 'birth_date', 'gender', 'height', 'weight', 'address', 'manager', 'last_measurement', 'username')
+        fields = ('name', 'phone', 'birth_date', 'gender', 'height', 'weight', 'address', 'manager', 'last_measurement', 'username', 'token')
         depth = 2
 
     def get_last_measurement(self, client):
@@ -85,4 +93,9 @@ class ClientSerializer(serializers.ModelSerializer):
         """사용자 아이디"""
         if client.user:
             return client.user.username
+        return None
+    
+    def get_token(self, client):
+        if client.user:
+            return client.user.auth_token.key
         return None

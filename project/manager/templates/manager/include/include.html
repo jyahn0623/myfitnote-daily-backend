@@ -13,58 +13,63 @@
     {% include 'manager/include/message.html' %}
     {% block header %}{% endblock %}
     {% block style %}{% endblock %}
+    {% if request.user.companymanager.company.primary_color %}
+    <style>
+        .sidebar-brand {
+            height : auto !important;
+        }
+        .bg-color {
+            background-color : {{request.user.companymanager.company.primary_color}};
+        }
+    </style>
+    {% endif %}
 </head>
 
 <body id="page-top">
     <!-- Page Wrapper -->
     <div id="wrapper">
-
         <!-- Sidebar -->
-        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+        <ul class="navbar-nav bg-color sidebar sidebar-dark accordion" 
+            id="accordionSidebar">
 
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="">
-                <div class="sidebar-brand-icon rotate-n-15">
-                    <i class="fas fa-laugh-wink"></i>
-                </div>
                 <div class="sidebar-brand-text mx-3">
-                    <div>myFitNote</div>
-                    <div>관리자 시스템</div>
+                    <div>
+                        {% if request.user.companymanager.company.logo %}
+                        <img src="{{request.user.companymanager.company.logo.url}}"
+                             style="width : 100%; height : 100%;" />
+                        {% else %}
+                        <div>{{request.user.companymanager.company.name}}</div>
+                        <div>관리자 시스템</div>
+                        {% endif %}
+                    </div>
                 </div>
             </a>
 
-            <!-- Divider -->
-            <hr class="sidebar-divider my-0">
+            {% comment %} <!-- Divider -->
+            <hr class="sidebar-divider my-0"> {% endcomment %}
 
             <!-- Nav Item - Pages Collapse Menu -->
+            <div class="sidebar-heading">
+                Master Data
+            </div>
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{% url 'manage:user-inquiry' %}">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>회원 정보</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="{% url 'manage:user-situp-inquiry' %}">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>근기능 검사</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="{% url 'manage:user-eyehand-inquiry' %}">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>협응 검사</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="{% url 'manage:user-walk-inquiry' %}">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>심폐기능 검사</span>
+                    <span>유저 관리</span>
                 </a>
             </li>
             <div class="sidebar-heading">
-                Data by center
+                Data Center
             </div>
             <li class="nav-item">
+                <a class="nav-link collapsed" href="{% url 'manage:measurement-management' %}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>측정 데이터 관리</span>
+                </a>
+            </li>
+            {% comment %} <li class="nav-item">
                 <a class="nav-link collapsed" href="/manage/npc/data">
                     <i class="fas fa-fw fa-table"></i>
                     <span>국립재활원 리빙랩</span>
@@ -75,7 +80,7 @@
                     <i class="fas fa-fw fa-table"></i>
                     <span>대교 뉴이프</span>
                 </a>
-            </li>
+            </li> {% endcomment %}
             <div class="sidebar-heading">
                 Analaysis
             </div>
@@ -85,20 +90,6 @@
                     <span>동작분석</span>
                 </a>
             </li>
-            {% comment %} <li class="nav-item">
-              <a class="nav-link collapsed" href="/" data-toggle="collapse" data-target="#counselor_room"
-                  aria-expanded="true" aria-controls="collapseTwo">
-                  <i class="fas fa-fw fa-table"></i>
-                  <span>상담실</span>
-              </a>
-              <div id="counselor_room" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="">회원 정보</a>
-                    <a class="collapse-item" href="">상담실</a>
-                    <a class="collapse-item" href="">상담정보</a>
-                </div>
-            </div>  
-            </li> {% endcomment %}
         </ul>
         <!-- End of Sidebar -->
 
@@ -122,27 +113,14 @@
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="/" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <span class="mr-2 d-none d-lg-inline text-gray-600 small">관리자</span>
+                                    <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{request.user.companymanager.name}}</span>
                                     <img class="img-profile rounded-circle"
                                         src="{% static 'manager/img/undraw_profile.svg' %}">
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
-                                {% comment %} <a class="dropdown-item" href="/">
-                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Profile
-                                </a>
-                                <a class="dropdown-item" href="/">
-                                    <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Settings
-                                </a>
-                                <a class="dropdown-item" href="/">
-                                    <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Activity Log
-                                </a>
-                                <div class="dropdown-divider"></div> {% endcomment %}
-                                <a class="dropdown-item" href="">
+                                <a class="dropdown-item" href="{% url 'manage:logout' %}">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     로그아웃
                                 </a>
@@ -164,7 +142,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Marketian & Exercowork 2023</span>
+                        <span>Copyright &copy; Marketian & Exercowork 2024</span>
                     </div>
                 </div>
             </footer>

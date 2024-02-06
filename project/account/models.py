@@ -66,6 +66,13 @@ class User(AbstractBaseUser):
         # Simplest possible answer: Yes, always
         return True
     
+    @property
+    def user_type_label(self):
+        if self.user_type == 1:
+            return "고객"
+        else:
+            return "담당자"
+    
 class Company(models.Model):
     """기업"""
     class Meta:
@@ -119,7 +126,7 @@ class Client(models.Model):
 
     def __str__(self) -> str:
         return f'{self.name} | {self.phone}'
-    
+  
 class ExerciseLog(models.Model):
     """
     User's exerciselog
